@@ -1,0 +1,1 @@
+©Qodo.ai. All rights reserved. Use is subject to Qodo's [General Terms of Service](https://www.qodo.ai/terms).

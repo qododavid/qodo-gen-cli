@@ -59,7 +59,7 @@ The `agent.toml` file is used to configure your own agent. Learn more on how to 
 
 For example:
 
-```jsx
+```text
 description = ""                   # a description of what your agent does
 
 instructions = """ """             # a prompt for the AI models explailing the required behavior

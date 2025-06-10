@@ -1,0 +1,98 @@
+name: 'Qodo AI CLI'
+description: 'Run Qodo CLI in CI mode'
+author: 'Qodo AI'
+
+inputs:
+  prompt:
+    description: 'The prompt or command to run with Qodo'
+    required: true
+  model:
+    description: 'Specify a custom model to use'
+    required: false
+  agentfile:
+    description: 'Path to custom agent.toml file (defaults to the example agent.toml included with this action)'
+    required: false
+    default: '${{ github.action_path }}/examples/agent.toml'
+  key-value-pairs:
+    description: 'Additional key-value pairs as JSON object or multiline string (e.g., {"key1": "value1", "key2": "value2"} or key1=value1 key2=value2)'
+    required: false
+  qodo-version:
+    description: 'Version of @qodo/gen to install (defaults to latest)'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        # Install jq for JSON parsing
+        if ! command -v jq &> /dev/null; then
+          sudo apt-get update && sudo apt-get install -y jq
+        fi
+
+    - name: Install Qodo CLI
+      shell: bash
+      run: |
+        if [ "${{ inputs.qodo-version }}" = "latest" ]; then
+          npm install -g @qodo/gen
+        else
+          npm install -g @qodo/gen@${{ inputs.qodo-version }}
+        fi
+
+    - name: Run Qodo Command
+      shell: bash
+      run: |
+        # Build the command
+        QODO_CMD="qodo --ci"
+        
+        # Add model if specified
+        if [ ! -z "${{ inputs.model }}" ]; then
+          QODO_CMD="$QODO_CMD --model=${{ inputs.model }}"
+        fi
+        
+        # Add agentfile if specified
+        if [ ! -z "${{ inputs.agentfile }}" ]; then
+          QODO_CMD="$QODO_CMD --agentfile=${{ inputs.agentfile }}"
+        fi
+        
+        # Parse and add key-value pairs
+        if [ ! -z "${{ inputs.key-value-pairs }}" ]; then
+          # Check if input is JSON format
+          if echo "${{ inputs.key-value-pairs }}" | jq -e . >/dev/null 2>&1; then
+            # Parse JSON and convert to --key=value format
+            PAIRS=$(echo "${{ inputs.key-value-pairs }}" | jq -r 'to_entries | .[] | "--\(.key)=\(.value)"' | tr '\n' ' ')
+            QODO_CMD="$QODO_CMD $PAIRS"
+          else
+            # Assume it's in key=value format separated by spaces or newlines
+            # Convert each key=value to --key=value
+            PAIRS=""
+            while IFS= read -r line; do
+              # Skip empty lines
+              if [ ! -z "$line" ]; then
+                # Check if line already starts with --
+                if [[ "$line" != --* ]]; then
+                  PAIRS="$PAIRS --$line"
+                else
+                  PAIRS="$PAIRS $line"
+                fi
+              fi
+            done <<< "${{ inputs.key-value-pairs }}"
+            QODO_CMD="$QODO_CMD $PAIRS"
+          fi
+        fi
+        
+        # Add the prompt at the end
+        QODO_CMD="$QODO_CMD \"${{ inputs.prompt }}\""
+        
+        # Echo the command for debugging
+        echo "Running: $QODO_CMD"
+        
+        # Execute the command
+        eval $QODO_CMD

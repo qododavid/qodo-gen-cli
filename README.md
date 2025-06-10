@@ -111,6 +111,92 @@ qodo models          # List supported AI models
 
 You can copy the API key shown after login into your CI/CD secrets. The key is tied to your user and subject to the same limits.
 
+### GitHub Action
+
+This repository includes a GitHub Action that makes it easy to integrate Qodo into your GitHub workflows.
+
+#### Basic Usage
+
+```yaml
+- uses: qodo-ai/qodo-gen-cli@main
+  with:
+    prompt: "review"
+```
+
+By default, this uses the example `agent.toml` included with the action. To use your own agent configuration, specify the `agentfile` input:
+
+```yaml
+- uses: qodo-ai/qodo-gen-cli@main
+  with:
+    prompt: "review"
+    agentfile: "./my-custom-agent.toml"  # Path relative to your repository root
+```
+
+#### All Options
+
+```yaml
+- uses: qodo-ai/qodo-gen-cli@main
+  with:
+    prompt: "your prompt here"              # Required: The prompt or command to run
+    model: "claude-4-sonnet"               # Optional: Specify AI model
+    agentfile: "path/to/agent.toml"        # Optional: Custom agent file (default: examples/agent.toml from action)
+    qodo-version: "latest"                 # Optional: @qodo/gen version (default: latest)
+    key-value-pairs: |                     # Optional: Additional parameters
+      coverage_threshold=80
+      test_framework=jest
+```
+
+#### Key-Value Pairs
+
+You can pass additional parameters in two formats:
+
+**JSON Format:**
+```yaml
+key-value-pairs: |
+  {
+    "coverage_score_threshold": "0.8",
+    "max_issues": "10",
+    "include_suggestions": "true"
+  }
+```
+
+**Multiline Format:**
+```yaml
+key-value-pairs: |
+  test_framework=jest
+  coverage_threshold=90
+  parallel=true
+```
+
+#### Complete Example
+
+```yaml
+name: Code Review
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: qodo-ai/qodo-gen-cli@main
+        with:
+          prompt: "review"
+          model: "claude-4-sonnet"
+          key-value-pairs: |
+            {
+              "coverage_score_threshold": "0.8",
+              "include_suggestions": "true"
+            }
+        env:
+          QODO_API_KEY: ${{ secrets.QODO_API_KEY }}
+```
+
+**Note:** Make sure to set your `QODO_API_KEY` in your repository secrets.
+
 ---
 
 For full documentation, visit the [Qodo documentation website](https://docs.qodo.ai/qodo-documentation/qodo-gen/cli)).

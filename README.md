@@ -170,32 +170,65 @@ key-value-pairs: |
 
 #### Complete Example
 
+**Example: Automated Test Coverage Generation with Label Trigger**
+
+This example shows how to create a test coverage bot that automatically generates tests for uncovered code when a specific label is added to a PR:
+
 ```yaml
-name: Code Review
+name: Test Coverage Bot
 on:
   pull_request:
-    types: [opened, synchronize]
+    branches:
+      - main
+    types:
+      - labeled
+
+permissions:
+  pull-requests: write
+  contents: write
 
 jobs:
-  review:
+  coverage:
+    # Only run if:
+    # 1. PR has the qodo-cover label
+    # 2. PR is open (not closed or draft)
+    if: |
+      contains(github.event.label.name, 'qodo-cover') &&
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
-      
-      - uses: qodo-ai/qodo-gen-cli@main
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Run Qodo Coverage Bot
+        uses: qodo-ai/qodo-gen-cli@main
         with:
-          prompt: "review"
-          model: "claude-4-sonnet"
+          prompt: "qodo-cover"
+          # agentfile: "${{ github.workspace }}/agent.toml"
           key-value-pairs: |
-            {
-              "coverage_score_threshold": "0.8",
-              "include_suggestions": "true"
-            }
+            desired_coverage=90
         env:
           QODO_API_KEY: ${{ secrets.QODO_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
 ```
 
-**Note:** Make sure to set your `QODO_API_KEY` in your repository secrets.
+In this example:
+- The workflow triggers when a label is added to a PR
+- It only runs if the label is "qodo-cover" and the PR is open
+- It uses the `qodo-cover` prompt to:
+  - Analyze which changed files need test coverage
+  - Generate appropriate tests for uncovered code
+  - Create a follow-up PR with the new tests targeting the original PR branch
+- Sets a desired coverage threshold of 90%
+- Requires both `QODO_API_KEY` and `GITHUB_TOKEN` secrets
+- Passes the PR number as an environment variable for the bot to reference
+
+**Note:** 
+- Make sure to set your `QODO_API_KEY` in your repository secrets.
+- allow GitHub Actions to create pull requests. This setting can be found under: **Settings > Actions > General > Workflow permissions** (near the bottom of the page). 
 
 ---
 

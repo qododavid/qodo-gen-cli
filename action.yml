@@ -1,6 +1,6 @@
-name: 'Qodo AI CLI'
-description: 'Run Qodo CLI in CI mode'
-author: 'Qodo AI'
+name: 'Qodo Gen CLI Action'
+description: 'Run Qodo Gen CLI agents with custom TOML and MCP configurations'
+author: 'Qodo'
 
 inputs:
   prompt:
@@ -125,3 +125,7 @@ runs:
         
         # Execute the command
         eval $QODO_CMD
+
+branding:
+  icon: 'cpu'
+  color: 'blue'

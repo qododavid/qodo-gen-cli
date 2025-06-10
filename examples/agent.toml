@@ -5,4 +5,5 @@ model = "claude-4-sonnet"
 imports = [
     "agents/diff_test_suite.toml",
     "agents/review.toml",
+    "agents/cover.toml",
 ]

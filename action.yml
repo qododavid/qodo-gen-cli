@@ -1,0 +1,41 @@
+name: 'Qodo Gen CLI Action'
+description: 'Run Qodo Gen CLI agents with custom TOML and MCP configurations'
+author: 'Qodo'
+
+inputs:
+  qodo-api-key:
+    description: 'Qodo API key for authentication'
+    required: true
+  agent-file:
+    description: 'Path to the TOML file containing the agent configuration'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Extract and verify command name from TOML
+      shell: bash
+      run: |
+        COMMAND_NAME=$(grep -o '\[commands\.[^]]*\]' "${{ inputs.agent-file }}" | head -1 | sed 's/\[commands\.\(.*\)\]/\1/')
+        if [ -z "$COMMAND_NAME" ]; then
+          echo "Error: No command found in agent TOML file. Expected format: [commands.command_name]"
+          exit 1
+        fi
+        echo "COMMAND_NAME=$COMMAND_NAME" >> $GITHUB_ENV
+        echo "Extracted command: $COMMAND_NAME"
+
+    - name: Run Qodo Gen CLI
+      shell: bash
+      run: |
+          docker run --rm \
+          -e GITHUB_TOKEN \
+          -e QODO_API_KEY="${{ inputs.qodo-api-key }}" \
+          -v "${{ github.workspace }}:/repo" -w /repo \
+          qodoai/gen:latest \
+          --agentfile "${{ inputs.agent-file }}" \
+          --ci \
+          "$COMMAND_NAME"
+
+branding:
+  icon: 'cpu'
+  color: 'blue'

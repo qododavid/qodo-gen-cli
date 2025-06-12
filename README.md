@@ -230,6 +230,8 @@ In this example:
 - Make sure to set your `QODO_API_KEY` in your repository secrets.
 - allow GitHub Actions to create pull requests. This setting can be found under: **Settings > Actions > General > Workflow permissions** (near the bottom of the page). 
 
+See ./examples/agents/cover.toml for the agent configuration.
+
 
 **Example: GitHub Comment Mention Bot**
 
@@ -271,6 +273,53 @@ jobs:
 
 This example shows how to create a bot that responds to comments mentioning "/qodo" in a GitHub issue or PR comment.
 For example: "/qodo can you explain this issue?"
+
+See ./examples/agents/mention.toml for the agent configuration.
+
+**Example: Release Notes Bot**
+
+```yaml
+name: Release Notes Generator (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_tag:
+        description: "Generate notes up to (and including) this tag; blank = HEAD"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+  id-token: write
+
+jobs:
+  release_notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Qodo release-notes agent
+        uses: qodo-ai/qodo-gen-cli@main
+        with:
+          prompt: qodo-release-notes
+          # agentfile: "${{ github.workspace }}/agent.toml"
+          key-value-pairs: |
+            target_tag=${{ github.event.inputs.target_tag }}
+            notes_file=RELEASE_NOTES.md
+        env:
+          QODO_API_KEY: ${{ secrets.QODO_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+```
+
+This example shows how to create a manually-dispatched bot that generates release notes for a given tag. The bot will create a new PR that updates the release notes file with the new release notes. 
+
+See ./examples/agents/release.toml for the agent configuration.
+
+
+
 
 ---
 

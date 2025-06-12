@@ -7,4 +7,5 @@ imports = [
     "agents/review.toml",
     "agents/cover.toml",
     "agents/mention.toml",
+    "agents/release.toml",
 ]

@@ -16,9 +16,9 @@ inputs:
     description: 'Additional key-value pairs as JSON object or multiline string (e.g., {"key1": "value1", "key2": "value2"} or key1=value1 key2=value2)'
     required: false
   qodo-version:
-    description: 'Version of @qodo/gen to install (defaults to latest)'
+    description: 'Version of @qodo/gen to install (defaults to 0.1.122)'
     required: false
-    default: 'latest'
+    default: '0.1.122'
 
 runs:
   using: 'composite'

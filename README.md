@@ -203,7 +203,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Run Qodo Coverage Bot
-        uses: qodo-ai/qodo-gen-cli@main
+        uses: qodo-ai/qodo-gen-cli@v1
         with:
           prompt: "qodo-cover"
           # agentfile: "${{ github.workspace }}/agent.toml"
@@ -259,7 +259,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Qodo Mention Bot
-        uses: qodo-ai/qodo-gen-cli@main
+        uses: qodo-ai/qodo-gen-cli@v1
         with:
           prompt: "qodo-mention"
           # agentfile: "${{ github.workspace }}/agent.toml"
@@ -301,7 +301,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Qodo release-notes agent
-        uses: qodo-ai/qodo-gen-cli@main
+        uses: qodo-ai/qodo-gen-cli@v1
         with:
           prompt: qodo-release-notes
           # agentfile: "${{ github.workspace }}/agent.toml"

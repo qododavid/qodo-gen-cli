@@ -168,7 +168,7 @@ key-value-pairs: |
   parallel=true
 ```
 
-#### Complete Example
+#### Complete Examples
 
 **Example: Automated Test Coverage Generation with Label Trigger**
 
@@ -230,6 +230,48 @@ In this example:
 - Make sure to set your `QODO_API_KEY` in your repository secrets.
 - allow GitHub Actions to create pull requests. This setting can be found under: **Settings > Actions > General > Workflow permissions** (near the bottom of the page). 
 
+
+**Example: GitHub Comment Mention Bot**
+
+```yaml
+name: Qodo Mention Bot
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: write
+
+jobs:
+  respond:
+    if: ${{ startsWith(github.event.comment.body, '/qodo ') && github.event.comment.user.login == github.repository_owner }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Qodo Mention Bot
+        uses: qodo-ai/qodo-gen-cli@main
+        with:
+          prompt: "qodo-mention"
+          # agentfile: "${{ github.workspace }}/agent.toml"
+          key-value-pairs: |
+            event_path=${{ github.event_path }}
+        env:
+          QODO_API_KEY: ${{ secrets.QODO_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+```
+
+This example shows how to create a bot that responds to comments mentioning "/qodo" in a GitHub issue or PR comment.
+For example: "/qodo can you explain this issue?"
+
 ---
 
-For full documentation, visit the [Qodo documentation website](https://docs.qodo.ai/qodo-documentation/qodo-gen/cli)).
+For full documentation, visit the [Qodo documentation website](https://docs.qodo.ai/qodo-documentation/qodo-gen/cli).

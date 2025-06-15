@@ -111,6 +111,216 @@ qodo models          # List supported AI models
 
 You can copy the API key shown after login into your CI/CD secrets. The key is tied to your user and subject to the same limits.
 
+### GitHub Action
+
+This repository includes a GitHub Action that makes it easy to integrate Qodo into your GitHub workflows.
+
+#### Basic Usage
+
+```yaml
+- uses: qodo-ai/qodo-gen-cli@main
+  with:
+    prompt: "review"
+```
+
+By default, this uses the example `agent.toml` included with the action. To use your own agent configuration, specify the `agentfile` input:
+
+```yaml
+- uses: qodo-ai/qodo-gen-cli@main
+  with:
+    prompt: "review"
+    agentfile: "./my-custom-agent.toml"  # Path relative to your repository root
+```
+
+#### All Options
+
+```yaml
+- uses: qodo-ai/qodo-gen-cli@main
+  with:
+    prompt: "your prompt here"              # Required: The prompt or command to run
+    model: "claude-4-sonnet"               # Optional: Specify AI model
+    agentfile: "path/to/agent.toml"        # Optional: Custom agent file (default: examples/agent.toml from action)
+    qodo-version: "latest"                 # Optional: @qodo/gen version (default: latest)
+    key-value-pairs: |                     # Optional: Additional parameters
+      coverage_threshold=80
+      test_framework=jest
+```
+
+#### Key-Value Pairs
+
+You can pass additional parameters in two formats:
+
+**JSON Format:**
+```yaml
+key-value-pairs: |
+  {
+    "coverage_score_threshold": "0.8",
+    "max_issues": "10",
+    "include_suggestions": "true"
+  }
+```
+
+**Multiline Format:**
+```yaml
+key-value-pairs: |
+  test_framework=jest
+  coverage_threshold=90
+  parallel=true
+```
+
+#### Complete Examples
+
+**Example: Automated Test Coverage Generation with Label Trigger**
+
+This example shows how to create a test coverage bot that automatically generates tests for uncovered code when a specific label is added to a PR:
+
+```yaml
+name: Test Coverage Bot
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - labeled
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  coverage:
+    # Only run if:
+    # 1. PR has the qodo-cover label
+    # 2. PR is open (not closed or draft)
+    if: |
+      contains(github.event.label.name, 'qodo-cover') &&
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Run Qodo Coverage Bot
+        uses: qodo-ai/qodo-gen-cli@v1
+        with:
+          prompt: "qodo-cover"
+          # agentfile: "${{ github.workspace }}/agent.toml"
+          key-value-pairs: |
+            desired_coverage=90
+        env:
+          QODO_API_KEY: ${{ secrets.QODO_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+```
+
+In this example:
+- The workflow triggers when a label is added to a PR
+- It only runs if the label is "qodo-cover" and the PR is open
+- It uses the `qodo-cover` prompt to:
+  - Analyze which changed files need test coverage
+  - Generate appropriate tests for uncovered code
+  - Create a follow-up PR with the new tests targeting the original PR branch
+- Sets a desired coverage threshold of 90%
+- Requires both `QODO_API_KEY` and `GITHUB_TOKEN` secrets
+- Passes the PR number as an environment variable for the bot to reference
+
+**Note:** 
+- Make sure to set your `QODO_API_KEY` in your repository secrets.
+- allow GitHub Actions to create pull requests. This setting can be found under: **Settings > Actions > General > Workflow permissions** (near the bottom of the page). 
+
+See ./examples/agents/cover.toml for the agent configuration.
+
+
+**Example: GitHub Comment Mention Bot**
+
+```yaml
+name: Qodo Mention Bot
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: write
+
+jobs:
+  respond:
+    if: ${{ startsWith(github.event.comment.body, '/qodo ') && github.event.comment.user.login == github.repository_owner }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Qodo Mention Bot
+        uses: qodo-ai/qodo-gen-cli@v1
+        with:
+          prompt: "qodo-mention"
+          # agentfile: "${{ github.workspace }}/agent.toml"
+          key-value-pairs: |
+            event_path=${{ github.event_path }}
+        env:
+          QODO_API_KEY: ${{ secrets.QODO_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+```
+
+This example shows how to create a bot that responds to comments mentioning "/qodo" in a GitHub issue or PR comment.
+For example: "/qodo can you explain this issue?"
+
+See ./examples/agents/mention.toml for the agent configuration.
+
+**Example: Release Notes Bot**
+
+```yaml
+name: Release Notes Generator (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_tag:
+        description: "Generate notes up to (and including) this tag; blank = HEAD"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+  id-token: write
+
+jobs:
+  release_notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Qodo release-notes agent
+        uses: qodo-ai/qodo-gen-cli@v1
+        with:
+          prompt: qodo-release-notes
+          # agentfile: "${{ github.workspace }}/agent.toml"
+          key-value-pairs: |
+            target_tag=${{ github.event.inputs.target_tag }}
+            notes_file=RELEASE_NOTES.md
+        env:
+          QODO_API_KEY: ${{ secrets.QODO_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+```
+
+This example shows how to create a manually-dispatched bot that generates release notes for a given tag. The bot will create a new PR that updates the release notes file with the new release notes. 
+
+See ./examples/agents/release.toml for the agent configuration.
+
+
+
+
 ---
 
-For full documentation, visit the [Qodo documentation website](https://docs.qodo.ai/qodo-documentation/qodo-gen/cli)).
+For full documentation, visit the [Qodo documentation website](https://docs.qodo.ai/qodo-documentation/qodo-gen/cli).

@@ -100,16 +100,16 @@ runs:
             QODO_CMD="$QODO_CMD $PAIRS"
           else
             # Assume it's in key=value format separated by spaces or newlines
-            # Convert each key=value to --set key=value
+            # Convert each key=value to --key=value
             PAIRS=""
             while IFS= read -r line; do
               # Skip empty lines
               if [ ! -z "$line" ]; then
-                # Check if line already starts with --set
-                if [[ "$line" == --set* ]]; then
-                  PAIRS="$PAIRS $line"
+                # Check if line already starts with --
+                if [[ "$line" != --* ]]; then
+                  PAIRS="$PAIRS --$line"
                 else
-                  PAIRS="$PAIRS --set $line"
+                  PAIRS="$PAIRS $line"
                 fi
               fi
             done <<< "${{ inputs.key-value-pairs }}"
